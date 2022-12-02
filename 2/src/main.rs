@@ -1,130 +1,68 @@
 use std::{io::{self, BufRead}, path::Path, fs::File};
 
-enum Move {
-  Rock =1,
-  Paper =2,
-  Scissors =3,
-}
-
-enum MatchResult {
-  Win = 6,
-  Lose = 0,
-  Draw = 3,
-}
-
 fn main() {
   let mut total = 0;
   if let Ok(lines) = read_lines("./input.txt") {
-    
-
     for line in lines {
       if let Ok(ip) = line {
-
         let moves: Vec<&str> = ip.trim().split(" ").collect();
-
-        total += get_winner(parse_opponent_move(moves[0]), parse_result(moves[1]));
-
-
+        total += get_winner_from_moves(parse_move("ABC", moves[0]), parse_move("XYZ", moves[1]));
+        // total += get_winner_from_result(parse_move("ABC", moves[0]), parse_result(moves[1]));
       }
     }
-
-
   }
   println!("{}", total);
 }
 
-fn parse_opponent_move(o_move: &str) -> Move {
-  if o_move == "A" {
-    return Move::Rock;
-  } else if o_move == "B" {
-    return Move::Paper;
-  } else if o_move == "C" {
-    return Move::Scissors;
+fn parse_move(lookup: &str, o_move: &str) -> usize {
+  let res = lookup.match_indices(o_move).next().unwrap().0 + 1;
+  return res;
+}
+
+fn parse_result(result: &str) -> usize {
+  let items = "XYZ";
+  let res = items.match_indices(result).next().unwrap().0 * 3;
+  return res;
+}
+fn get_winner_from_result(o_move: usize, result: usize ) -> usize {
+  let mut score = result;
+
+  if score == 3 {
+    score += o_move
+  } else if result == 0 {
+    let mut res = o_move - 1;
+    if res < 1 {
+      res +=3;
+    }
+    score += res;
   } else {
-    panic!("Invalid move");
+    let mut res = o_move + 1;
+    if res > 3 {
+      res -=3;
+    }
+    score += res;
   }
+
+  return score
 }
 
-fn parse_my_move(o_move: &str) -> Move {
-  if o_move == "X" {
-    return Move::Rock;
-  } else if o_move == "Y" {
-    return Move::Paper;
-  } else if o_move == "Z" {
-    return Move::Scissors;
-  } else {
-    panic!("Invalid move");
-  }
-}
+fn get_winner_from_moves(o_move: usize, m_move: usize) -> usize {
+  let mut score: usize = m_move ;
 
-fn parse_result(result: &str) -> MatchResult {
-  if result == "X" {
-    return MatchResult::Lose;
-  } else if result == "Y" {
-    return MatchResult::Draw;
-  } else if result == "Z" {
-    return MatchResult::Win;
-  } else {
-    panic!("Invalid move");
-  }
-}
-
-fn calc_result(my_move: Move, win: MatchResult) -> i32 {
-  match win {
-    MatchResult::Win => {
-      return 6 + (my_move as i32);
+  if o_move == m_move {
+    score += 3;
+  }else {
+    let mut res: usize = 0;
+    if m_move < o_move {
+      res = (3 + m_move - o_move) % 3;
+    }else {
+      res = (m_move - o_move) % 3;
     }
-    MatchResult::Lose => {
-      return 0 + (my_move as i32);
-    }
-    MatchResult::Draw => {
-      return 3 + (my_move as i32);
+    if res == 1 {
+      score += 6;
     }
   }
-}
-
-fn get_winner(o_move: Move, result: MatchResult) -> i32 {
-  match o_move {
-    Move::Rock => {
-      match result {
-        MatchResult::Lose => {
-          return calc_result(Move::Scissors, MatchResult::Lose);
-        }
-        MatchResult::Draw => {
-          return calc_result(Move::Rock, MatchResult::Draw);
-        }
-        MatchResult::Win => {
-          return calc_result(Move::Paper, MatchResult::Win);
-        }
-      }
-    }
-    Move::Paper => {
-      match result {
-        MatchResult::Lose => {
-          return calc_result(Move::Rock, MatchResult::Lose);
-        }
-        MatchResult::Draw => {
-          return calc_result(Move::Paper, MatchResult::Draw);
-        }
-        MatchResult::Win => {
-          return calc_result(Move::Scissors, MatchResult::Win);
-        }
-      }
-    }
-    Move::Scissors => {
-      match result {
-        MatchResult::Lose => {
-          return calc_result(Move::Paper, MatchResult::Lose);
-        }
-        MatchResult::Draw => {
-          return calc_result(Move::Scissors, MatchResult::Draw);
-        }
-        MatchResult::Win => {
-          return calc_result(Move::Rock, MatchResult::Win);
-        }
-      }
-    }
-  }
+  return score;
 }
 
 // The output is wrapped in a Result to allow matching on errors
